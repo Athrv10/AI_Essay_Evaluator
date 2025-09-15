@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 from openai import OpenAI
+from openai import AuthenticationError
 import os
 from dotenv import load_dotenv
 
@@ -25,7 +26,7 @@ client = OpenAI(
 # --- Flask Routes ---
 @app.route('/')
 def home():
-    """A simple route to confirm the server is running."""
+    """Renders the main essay marker HTML page."""
     return render_template('index.html')
 
 @app.route('/mark_essay', methods=['POST'])
@@ -87,7 +88,11 @@ def mark_essay():
         llm_response = completion.choices[0].message.content
         return jsonify({"critique": llm_response})
 
+    except AuthenticationError as e:
+        # Catch specific authentication errors from the API
+        return jsonify({"error": f"API Authentication Error: {str(e)}"}), 401
     except Exception as e:
+        # Catch all other general errors
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
