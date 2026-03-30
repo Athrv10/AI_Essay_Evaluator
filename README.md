@@ -97,4 +97,4 @@ Support for multiple evaluation models.
 
 Integration with Google Docs / PDFs for direct uploads.
 
-Visual dashboard using Power BI or Plotly Dash for insights.
+Visual dashboard using Power BI or Plotly Dash for insights..
