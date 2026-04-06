@@ -1,22 +1,21 @@
 from flask import Flask, request, jsonify, render_template
-from openai import OpenAI
-from openai import AuthenticationError
+from openai import OpenAI, AuthenticationError
 import os
+import json
+import re
 from dotenv import load_dotenv
 
 # Load environment variables from the .env file
 load_dotenv()
 
 # Initialize Flask app
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', template_folder='templates')
 
 # --- LLM API Setup ---
-# Get the API key from the environment variables
 api_key = os.getenv("OPENROUTER_API_KEY")
 
 if not api_key:
-    # This will prevent the app from starting if the key is missing
-    raise ValueError("OPENROUTER_API_KEY not found. Please set it in your .env file or as an environment variable.")
+    raise ValueError("OPENROUTER_API_KEY not found. Please set it in your .env file.")
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
@@ -26,74 +25,85 @@ client = OpenAI(
 # --- Flask Routes ---
 @app.route('/')
 def home():
-    """Renders the main essay marker HTML page."""
+    """Renders the main EssayIQ HTML page."""
     return render_template('index.html')
 
-@app.route('/mark_essay', methods=['POST'])
+
+@app.route('/api/mark_essay', methods=['POST'])
 def mark_essay():
     """
-    Receives an essay from the user, sends it to the LLM for marking,
-    and returns the LLM's response.
+    Receives an essay, topic, and mode from the frontend.
+    Returns structured JSON with score, breakdown, and suggestions.
     """
     data = request.get_json()
-    essay_text = data.get('essay_text')
+    essay_text = data.get('essay_text', '').strip()
+    topic = data.get('topic', 'General')
+    mode = data.get('mode', 'standard')
 
     if not essay_text:
         return jsonify({"error": "No essay text provided."}), 400
 
     try:
-        # Define the enhanced prompt for the LLM
-        prompt = (
-    "You are an expert essay marker. Read the following essay carefully and provide a structured critique. "
-    "Your response must strictly follow these specifications:\n\n"
+        prompt = f"""You are an expert essay evaluator. Analyze the following essay and return ONLY a valid JSON object (no markdown, no extra text).
 
-    "1. Word Count: Your critique must be between 350 and 400 words.\n"
-    "2. Number of Reasons: Identify and evaluate 2 to 3 main reasons in the essay. "
-    "If 2–3 reasons are provided with relevant examples, mark this as very good.\n"
-    "3. Clarity & Stand: Comment on whether the essay has a clear position or stand, "
-    "and how consistently this is maintained.\n"
-    "4. Relevance of Reasoning: Evaluate if the reasoning given supports the position effectively.\n"
-    "5. Introduction: Assess the quality of the essay’s introduction (clarity, context, engagement).\n"
-    "6. Conclusion: Assess the quality of the essay’s conclusion (summarization, reinforcement of position).\n\n"
+Essay Topic: {topic if topic else 'Not specified'}
+Evaluation Mode: {mode}
 
-    "Your critique must be structured in the following sections:\n\n"
+Essay:
+{essay_text}
 
-    "### Overall Judgment\n"
-    "- Provide 2–3 paragraphs describing the strengths and weaknesses of the essay.\n\n"
+Return this exact JSON structure:
+{{
+  "score": <integer 0-100>,
+  "grade": "<letter grade A+/A/A-/B+/B/B-/C+/C/D/F>",
+  "description": "<2-3 sentence overall assessment>",
+  "tags": ["<strength1>", "<strength2>"],
+  "grammar": <integer 0-100>,
+  "coherence": <integer 0-100>,
+  "vocabulary": <integer 0-100>,
+  "relevance": <integer 0-100>,
+  "structure": <integer 0-100>,
+  "suggestions": [
+    {{"type": "<category>", "icon": "<emoji>", "color": "<hex color>", "text": "<specific suggestion>"}},
+    {{"type": "<category>", "icon": "<emoji>", "color": "<hex color>", "text": "<specific suggestion>"}},
+    {{"type": "<category>", "icon": "<emoji>", "color": "<hex color>", "text": "<specific suggestion>"}}
+  ]
+}}
 
-    "### What to Improve\n"
-    "- Provide 3–4 specific, actionable suggestions. Use bullet points.\n\n"
+Use these colors: Grammar=#4F8EF7, Coherence=#F59E0B, Vocabulary=#9B5CF6, Structure=#22D3A5, Relevance=#F87171, Excellence=#F59E0B"""
 
-    "### Explanation of the Final Score\n"
-    "- Write 1 short paragraph explaining why the essay deserves the score, referring to the above criteria.\n\n"
-
-    "### Final Score\n"
-    "- Provide a single integer score from 1 to 10 on its own line. Do not add any extra words.\n\n"
-
-    f"Essay to be marked: {essay_text}"
-)
-
-
-        # Make the API call to OpenRouter using your specified model
         completion = client.chat.completions.create(
             model="nvidia/nemotron-nano-9b-v2:free",
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3
         )
 
-        llm_response = completion.choices[0].message.content
-        return jsonify({"critique": llm_response})
+        response_text = completion.choices[0].message.content.strip()
+
+        # Try to parse JSON from response
+        try:
+            # Extract JSON if wrapped in markdown code blocks
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                result = json.loads(json_match.group())
+            else:
+                result = json.loads(response_text)
+            return jsonify(result)
+        except json.JSONDecodeError:
+            # Fallback: return as critique text
+            return jsonify({"critique": response_text, "score": 75})
 
     except AuthenticationError as e:
-        # Catch specific authentication errors from the API
         return jsonify({"error": f"API Authentication Error: {str(e)}"}), 401
     except Exception as e:
-        # Catch all other general errors
         return jsonify({"error": str(e)}), 500
 
+
+# Legacy route (keep for backward compatibility)
+@app.route('/mark_essay', methods=['POST'])
+def mark_essay_legacy():
+    return mark_essay()
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
