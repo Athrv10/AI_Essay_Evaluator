@@ -1,104 +1,53 @@
 /* ===========================================
    EssayIQ – App.js
-   Premium SPA Logic
+   Live MongoDB-powered SPA Logic
 =========================================== */
 
 'use strict';
 
 // ─────────────────────────────────────────
-// SAMPLE DATA
+// API CLIENT
 // ─────────────────────────────────────────
-const sampleEssays = [
-  {
-    id: 1, icon: '📖',
-    title: 'The Impact of Technology on Modern Education',
-    summary: 'This essay explores how digital transformation has revolutionized the classroom experience.',
-    score: 87, grade: 'A', date: 'Apr 05, 2026',
-    tags: ['grammar', 'structure', 'vocabulary'],
-    topic: 'Education & Technology',
-    mode: 'academic',
-    breakdown: { grammar: 91, coherence: 83, vocabulary: 88, relevance: 86, structure: 87 },
-    suggestions: [
-      { type: 'Grammar', icon: '✏️', color: '#4F8EF7', text: 'Consider varying sentence structure to avoid repetition in paragraph 3.' },
-      { type: 'Vocabulary', icon: '📚', color: '#9B5CF6', text: 'Replace "big" with more academic alternatives like "substantial" or "significant".' },
-      { type: 'Structure', icon: '🏗️', color: '#22D3A5', text: 'Your conclusion effectively summarizes main points. Consider adding a future outlook.' },
-    ]
+const API = {
+  async getEssays() {
+    const res = await fetch('/api/essays');
+    if (!res.ok) throw new Error('Failed to load essays');
+    return res.json();
   },
-  {
-    id: 2, icon: '🌍',
-    title: 'Climate Change: A Global Crisis',
-    summary: 'An in-depth analysis of climate change causes, effects, and potential solutions.',
-    score: 94, grade: 'A+', date: 'Apr 03, 2026',
-    tags: ['grammar', 'coherence', 'relevance'],
-    topic: 'Environment',
-    mode: 'academic',
-    breakdown: { grammar: 96, coherence: 94, vocabulary: 92, relevance: 95, structure: 93 },
-    suggestions: [
-      { type: 'Excellence', icon: '⭐', color: '#F59E0B', text: 'Outstanding use of statistical evidence to support your arguments.' },
-      { type: 'Vocabulary', icon: '📚', color: '#9B5CF6', text: 'Excellent range of domain-specific terminology throughout.' },
-    ]
+
+  async getEssay(id) {
+    const res = await fetch(`/api/essay/${id}`);
+    if (!res.ok) throw new Error('Essay not found');
+    return res.json();
   },
-  {
-    id: 3, icon: '🤖',
-    title: 'Artificial Intelligence in Healthcare',
-    summary: 'Examining how AI diagnostic tools are transforming patient care and medical research.',
-    score: 79, grade: 'B+', date: 'Apr 01, 2026',
-    tags: ['structure', 'vocabulary'],
-    topic: 'AI & Medicine',
-    mode: 'standard',
-    breakdown: { grammar: 82, coherence: 77, vocabulary: 80, relevance: 78, structure: 76 },
-    suggestions: [
-      { type: 'Coherence', icon: '🔗', color: '#F59E0B', text: 'Add transitional phrases between paragraphs to improve flow and readability.' },
-      { type: 'Structure', icon: '🏗️', color: '#22D3A5', text: 'Introduction lacks a clear thesis statement. State your main argument up front.' },
-      { type: 'Grammar', icon: '✏️', color: '#4F8EF7', text: 'Found 3 subject-verb agreement errors. Review paragraph 2 and 5.' },
-    ]
+
+  async markEssay(payload) {
+    const res = await fetch('/api/mark_essay', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Server error');
+    }
+    return res.json();
   },
-  {
-    id: 4, icon: '🎭',
-    title: 'The Role of Art in Society',
-    summary: 'Exploring how artistic expression shapes culture, values, and social movements.',
-    score: 73, grade: 'B', date: 'Mar 28, 2026',
-    tags: ['grammar', 'vocabulary', 'coherence'],
-    topic: 'Arts & Culture',
-    mode: 'creative',
-    breakdown: { grammar: 75, coherence: 70, vocabulary: 78, relevance: 72, structure: 71 },
-    suggestions: [
-      { type: 'Coherence', icon: '🔗', color: '#F59E0B', text: 'Arguments could benefit from stronger logical connections between sections.' },
-      { type: 'Evidence', icon: '📊', color: '#F87171', text: 'Claims need more supporting evidence. Include specific examples or citations.' },
-      { type: 'Grammar', icon: '✏️', color: '#4F8EF7', text: 'Multiple comma splice errors detected. Review sentence boundaries.' },
-    ]
-  },
-  {
-    id: 5, icon: '💊',
-    title: 'Mental Health Awareness in Schools',
-    summary: 'Arguing for comprehensive mental health programs in K-12 educational institutions.',
-    score: 88, grade: 'A', date: 'Mar 25, 2026',
-    tags: ['structure', 'relevance', 'vocabulary'],
-    topic: 'Mental Health',
-    mode: 'academic',
-    breakdown: { grammar: 90, coherence: 87, vocabulary: 85, relevance: 91, structure: 88 },
-    suggestions: [
-      { type: 'Excellence', icon: '⭐', color: '#F59E0B', text: 'Compelling personal narrative strengthens the essay significantly.' },
-      { type: 'Vocabulary', icon: '📚', color: '#9B5CF6', text: 'Consider introducing more psychological terminology for academic depth.' },
-    ]
-  },
-  {
-    id: 6, icon: '🚀',
-    title: 'Space Exploration: Is It Worth It?',
-    summary: 'A cost-benefit analysis of continued investment in space exploration programs.',
-    score: 65, grade: 'C+', date: 'Mar 20, 2026',
-    tags: ['grammar', 'coherence'],
-    topic: 'Science & Space',
-    mode: 'standard',
-    breakdown: { grammar: 68, coherence: 62, vocabulary: 67, relevance: 64, structure: 65 },
-    suggestions: [
-      { type: 'Structure', icon: '🏗️', color: '#22D3A5', text: 'Essay lacks a clear organizational structure. Consider using topic sentences.' },
-      { type: 'Evidence', icon: '📊', color: '#F87171', text: 'Counter-arguments are not adequately addressed. Acknowledge opposing views.' },
-      { type: 'Grammar', icon: '✏️', color: '#4F8EF7', text: 'Multiple tense inconsistencies throughout. Choose past or present consistently.' },
-      { type: 'Coherence', icon: '🔗', color: '#F59E0B', text: 'The conclusion introduces new ideas. Restrict it to summarizing existing points.' },
-    ]
-  },
-];
+};
+
+// In-memory cache shared across pages so we only fetch once per session
+// unless an essay is added (then we invalidate)
+let essaysCache = null;
+
+async function getEssaysCached(forceRefresh = false) {
+  if (!forceRefresh && essaysCache !== null) return essaysCache;
+  try {
+    essaysCache = await API.getEssays();
+  } catch {
+    essaysCache = [];
+  }
+  return essaysCache;
+}
 
 // ─────────────────────────────────────────
 // NAVIGATION SYSTEM
@@ -125,7 +74,7 @@ class Navigation {
       });
     });
 
-    // Hero CTA buttons
+    // Hero CTA button
     const heroStartBtn = document.getElementById('heroStartBtn');
     if (heroStartBtn) {
       heroStartBtn.addEventListener('click', () => this.navigate('evaluate'));
@@ -152,35 +101,35 @@ class Navigation {
   }
 
   navigate(page) {
-    // Hide all pages
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
 
-    // Show target page
     const target = document.getElementById(`page-${page}`);
     if (target) {
       target.classList.add('active');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Update nav links
     document.querySelectorAll('.nav-link').forEach(link => {
       link.classList.toggle('active', link.dataset.page === page);
     });
 
-    // Update mobile nav
     document.querySelectorAll('.mob-nav-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.page === page);
     });
 
-    // Close mobile menu if open
     const navLinks = document.getElementById('navLinks');
     if (navLinks) navLinks.classList.remove('mobile-open');
 
     this.currentPage = page;
 
-    // Trigger page-specific init
     if (page === 'insights') {
       setTimeout(() => initInsights(), 100);
+    }
+    if (page === 'history') {
+      initHistory();
+    }
+    if (page === 'home') {
+      initHome();
     }
   }
 }
@@ -197,19 +146,23 @@ function getScoreBadgeClass(score) {
 
 function renderEssayCard(essay, showQuickBtn = false) {
   const badgeClass = getScoreBadgeClass(essay.score);
-  const tagsHTML = essay.tags.map(tag =>
+  const id = essay._id;           // always a MongoDB string id
+  const icon = essay.icon || '📝';
+  const mode = essay.mode || 'standard';
+  const tags = (essay.tags || []);
+  const tagsHTML = tags.map(tag =>
     `<span class="tag tag-${tag}">${tag.charAt(0).toUpperCase() + tag.slice(1)}</span>`
   ).join('');
 
   return `
-    <div class="essay-card animate-in" data-id="${essay.id}" style="animation-delay:${Math.random() * 0.2}s">
+    <div class="essay-card animate-in" data-id="${id}" style="animation-delay:${Math.random() * 0.2}s">
       <span class="card-score-badge ${badgeClass}">${essay.score}</span>
-      <div class="card-icon">${essay.icon}</div>
+      <div class="card-icon">${icon}</div>
       <div class="card-title">${essay.title}</div>
-      <div class="card-summary">${essay.summary}</div>
-      <div class="card-date">📅 ${essay.date} · ${essay.mode.charAt(0).toUpperCase() + essay.mode.slice(1)}</div>
+      <div class="card-summary">${essay.summary || ''}</div>
+      <div class="card-date">📅 ${essay.date} · ${mode.charAt(0).toUpperCase() + mode.slice(1)}</div>
       <div class="card-tags">${tagsHTML}</div>
-      ${showQuickBtn ? `<button class="card-quick-btn" data-id="${essay.id}">Quick View →</button>` : ''}
+      ${showQuickBtn ? `<button class="card-quick-btn" data-id="${id}">Quick View →</button>` : ''}
     </div>
   `;
 }
@@ -217,21 +170,28 @@ function renderEssayCard(essay, showQuickBtn = false) {
 function injectCards(containerId, essays, showQuickBtn = false) {
   const container = document.getElementById(containerId);
   if (!container) return;
+
+  if (!essays || essays.length === 0) {
+    container.innerHTML = `
+      <div style="color:var(--text-secondary); padding: 24px; text-align:center; width:100%;">
+        No essays found. Start by evaluating an essay!
+      </div>`;
+    return;
+  }
+
   container.innerHTML = essays.map(e => renderEssayCard(e, showQuickBtn)).join('');
 
-  // Attach click listeners to cards
   container.querySelectorAll('.essay-card').forEach(card => {
     card.addEventListener('click', (e) => {
       if (e.target.classList.contains('card-quick-btn')) return;
-      const id = parseInt(card.dataset.id);
-      openModal(id);
+      openModal(card.dataset.id);
     });
   });
 
   container.querySelectorAll('.card-quick-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      openModal(parseInt(btn.dataset.id));
+      openModal(btn.dataset.id);
     });
   });
 }
@@ -239,37 +199,51 @@ function injectCards(containerId, essays, showQuickBtn = false) {
 // ─────────────────────────────────────────
 // HOME PAGE SETUP
 // ─────────────────────────────────────────
-function initHome() {
-  // Recent evaluations (last 4)
-  const recent = [...sampleEssays].sort((a, b) => b.id - a.id).slice(0, 5);
+async function initHome() {
+  const essays = await getEssaysCached();
+
+  // Recent (already sorted newest-first by the API)
+  const recent = essays.slice(0, 5);
   injectCards('recentCards', recent);
 
-  // Top scoring essays
-  const topScoring = [...sampleEssays].sort((a, b) => b.score - a.score).slice(0, 5);
+  // Top scoring
+  const topScoring = [...essays].sort((a, b) => b.score - a.score).slice(0, 5);
   injectCards('topCards', topScoring);
 
   // Recommended improvements (lowest score)
-  const improvements = [...sampleEssays].sort((a, b) => a.score - b.score).slice(0, 5);
+  const improvements = [...essays].sort((a, b) => a.score - b.score).slice(0, 5);
   injectCards('improveCards', improvements);
 }
 
 // ─────────────────────────────────────────
 // HISTORY PAGE SETUP
 // ─────────────────────────────────────────
-function initHistory() {
-  injectCards('historyCards1', sampleEssays, true);
-  injectCards('historyCards2', [...sampleEssays].reverse(), true);
+let historyEssays = [];   // local mutable copy for filtering
+
+async function initHistory() {
+  try {
+    historyEssays = await getEssaysCached();
+  } catch {
+    historyEssays = [];
+  }
+  renderHistoryCards(historyEssays);
+
+  // Also populate "Recently Evaluated" row (last 5 by date)
+  injectCards('historyCards2', historyEssays.slice(0, 5), true);
 
   // Search
   const searchInput = document.getElementById('historySearch');
   if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
+    // Remove old listener by replacing the node
+    const newSearch = searchInput.cloneNode(true);
+    searchInput.parentNode.replaceChild(newSearch, searchInput);
+    newSearch.addEventListener('input', (e) => {
       const query = e.target.value.toLowerCase();
-      const filtered = sampleEssays.filter(es =>
-        es.title.toLowerCase().includes(query) ||
-        es.topic.toLowerCase().includes(query)
+      const filtered = historyEssays.filter(es =>
+        (es.title || '').toLowerCase().includes(query) ||
+        (es.topic || '').toLowerCase().includes(query)
       );
-      injectCards('historyCards1', filtered, true);
+      renderHistoryCards(filtered);
     });
   }
 
@@ -285,20 +259,24 @@ function initHistory() {
 
       if (sort) {
         let sorted;
-        if (sort === 'high') sorted = [...sampleEssays].sort((a, b) => b.score - a.score);
-        else if (sort === 'low') sorted = [...sampleEssays].sort((a, b) => a.score - b.score);
-        else sorted = [...sampleEssays];
-        injectCards('historyCards1', sorted, true);
+        if (sort === 'high') sorted = [...historyEssays].sort((a, b) => b.score - a.score);
+        else if (sort === 'low') sorted = [...historyEssays].sort((a, b) => a.score - b.score);
+        else sorted = [...historyEssays];
+        renderHistoryCards(sorted);
       }
 
       if (topic && topic !== 'all') {
-        const filtered = sampleEssays.filter(e => e.mode === topic);
-        injectCards('historyCards1', filtered.length ? filtered : sampleEssays, true);
+        const filtered = historyEssays.filter(e => e.mode === topic);
+        renderHistoryCards(filtered.length ? filtered : historyEssays);
       } else if (topic === 'all') {
-        injectCards('historyCards1', sampleEssays, true);
+        renderHistoryCards(historyEssays);
       }
     });
   });
+}
+
+function renderHistoryCards(essays) {
+  injectCards('historyCards1', essays, true);
 }
 
 // ─────────────────────────────────────────
@@ -377,7 +355,6 @@ class Evaluator {
   handleFile(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
-      // Switch to paste tab and fill content
       document.getElementById('tabPaste')?.click();
       const textarea = document.getElementById('essayInput');
       if (textarea) {
@@ -405,7 +382,6 @@ class Evaluator {
   }
 
   renderResults(data) {
-    // Animate score ring
     const arc = document.getElementById('scoreArc');
     const scoreEl = document.getElementById('overallScore');
     const gradeEl = document.getElementById('scoreGrade');
@@ -414,9 +390,6 @@ class Evaluator {
 
     if (arc && scoreEl) {
       const circumference = 314;
-      const offset = circumference - (data.score / 100) * circumference;
-
-      // Animate count
       let current = 0;
       const step = data.score / 50;
       const counter = setInterval(() => {
@@ -431,7 +404,8 @@ class Evaluator {
     if (descEl) descEl.textContent = data.description;
 
     if (tagsEl) {
-      tagsEl.innerHTML = data.tags.map(tag =>
+      const tags = data.tags || [];
+      tagsEl.innerHTML = tags.map(tag =>
         `<span class="tag tag-${tag.toLowerCase()}">${tag}</span>`
       ).join('');
     }
@@ -441,14 +415,15 @@ class Evaluator {
     if (breakdownEl) {
       breakdownEl.innerHTML = '';
       const categories = [
-        { label: 'Grammar', key: 'grammar' },
-        { label: 'Coherence', key: 'coherence' },
+        { label: 'Grammar',    key: 'grammar' },
+        { label: 'Coherence',  key: 'coherence' },
         { label: 'Vocabulary', key: 'vocabulary' },
-        { label: 'Relevance', key: 'relevance' },
-        { label: 'Structure', key: 'structure' },
+        { label: 'Relevance',  key: 'relevance' },
+        { label: 'Structure',  key: 'structure' },
       ];
+      const breakdown = data.breakdown || {};
       categories.forEach(cat => {
-        const val = data.breakdown[cat.key] || 0;
+        const val = breakdown[cat.key] || 0;
         const item = document.createElement('div');
         item.className = 'breakdown-item';
         item.innerHTML = `
@@ -469,10 +444,11 @@ class Evaluator {
     // Suggestions
     const suggestionsEl = document.getElementById('suggestionsList');
     if (suggestionsEl) {
-      suggestionsEl.innerHTML = data.suggestions.map(sug => `
+      const suggestions = data.suggestions || [];
+      suggestionsEl.innerHTML = suggestions.map(sug => `
         <div class="suggestion-item">
           <div class="suggestion-icon" style="background:${sug.color}18; color:${sug.color}">
-            ${sug.icon}
+            ${sug.icon || '💡'}
           </div>
           <div class="sug-info">
             <div class="sug-type">${sug.type}</div>
@@ -485,12 +461,13 @@ class Evaluator {
 
   async evaluate() {
     const textarea = document.getElementById('essayInput');
-    const topic = document.getElementById('essayTopic');
+    const topicInput = document.getElementById('essayTopic');
     const mode = document.querySelector('.mode-chip.active')?.dataset.mode || 'standard';
 
-    const essayText = textarea?.value.trim();
+    const content = textarea?.value.trim();
+    const topic   = topicInput?.value.trim() || '';
 
-    if (!essayText || essayText.split(/\s+/).length < 20) {
+    if (!content || content.split(/\s+/).length < 20) {
       this.showToast('Please enter at least 20 words to evaluate.', 'warning');
       return;
     }
@@ -498,123 +475,54 @@ class Evaluator {
     this.showLoading();
 
     try {
-      // Try sending to backend; fall back to mock if unavailable
-      const response = await Promise.race([
-        fetch('/api/mark_essay', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            essay_text: essayText,
-            topic: topic?.value || '',
-            mode
-          })
-        }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
-      ]);
+      const data = await API.markEssay({ topic, content, mode });
 
-      if (!response.ok) throw new Error('Server error');
+      // Normalise API response for the results panel
+      const normalised = {
+        score:       data.score,
+        grade:       data.grade,
+        description: data.description || '',
+        tags:        data.tags || [],
+        breakdown:   data.breakdown || {},
+        suggestions: data.suggestions || [],
+      };
 
-      const data = await response.json();
-      this.showResults(this.transformBackendResponse(data));
+      this.showResults(normalised);
+      this.showToast('Essay evaluated & saved! ✅', 'success');
+
+      // Invalidate cache so Home and History refresh on next visit
+      essaysCache = null;
 
     } catch (err) {
-      // Use mock evaluation if backend unavailable
-      await new Promise(r => setTimeout(r, 2000));
-      const mockResult = this.generateMockResult(essayText);
-      this.showResults(mockResult);
+      document.getElementById('resultsLoading')?.classList.add('hidden');
+      document.getElementById('resultsIdle')?.classList.remove('hidden');
+      this.showToast(`Error: ${err.message}`, 'error');
     }
   }
 
-  transformBackendResponse(data) {
-    // Transform your backend's response format to our UI format
-    const score = data.score ?? data.overall_score ?? 80;
-    return {
-      score,
-      grade: this.scoreToGrade(score),
-      description: data.critique ?? data.feedback ?? 'Evaluation complete.',
-      tags: data.tags ?? ['Grammar', 'Coherence'],
-      breakdown: {
-        grammar: data.grammar ?? Math.round(score + Math.random() * 10 - 5),
-        coherence: data.coherence ?? Math.round(score + Math.random() * 10 - 5),
-        vocabulary: data.vocabulary ?? Math.round(score + Math.random() * 10 - 5),
-        relevance: data.relevance ?? Math.round(score + Math.random() * 10 - 5),
-        structure: data.structure ?? Math.round(score + Math.random() * 10 - 5),
-      },
-      suggestions: data.suggestions ?? [
-        { type: 'AI Note', icon: '🤖', color: '#4F8EF7', text: data.critique ?? 'Great essay! Keep writing.' }
-      ]
-    };
-  }
-
-  generateMockResult(text) {
-    const words = text.split(/\s+/).length;
-    const sentences = text.split(/[.!?]/).filter(s => s.trim()).length;
-    const avgSentLen = words / Math.max(sentences, 1);
-
-    // Heuristic scoring
-    let baseScore = 60;
-    if (words > 200) baseScore += 8;
-    if (words > 400) baseScore += 7;
-    if (avgSentLen >= 10 && avgSentLen <= 25) baseScore += 8;
-    if (/however|therefore|furthermore|moreover|consequently/i.test(text)) baseScore += 7;
-    if (/in conclusion|to summarize|in summary/i.test(text)) baseScore += 5;
-    baseScore = Math.min(98, baseScore + Math.floor(Math.random() * 10));
-
-    const g = Math.min(100, baseScore + Math.floor(Math.random() * 12) - 4);
-    const c = Math.min(100, baseScore + Math.floor(Math.random() * 12) - 5);
-    const v = Math.min(100, baseScore + Math.floor(Math.random() * 12) - 3);
-    const r = Math.min(100, baseScore + Math.floor(Math.random() * 12) - 6);
-    const s = Math.min(100, baseScore + Math.floor(Math.random() * 12) - 4);
-
-    const suggestions = [];
-
-    if (g < 80) suggestions.push({ type: 'Grammar', icon: '✏️', color: '#4F8EF7', text: 'Review subject-verb agreement and check for comma splices.' });
-    if (c < 80) suggestions.push({ type: 'Coherence', icon: '🔗', color: '#F59E0B', text: 'Use transitional phrases to connect your ideas more smoothly.' });
-    if (v < 80) suggestions.push({ type: 'Vocabulary', icon: '📚', color: '#9B5CF6', text: 'Diversify your word choices; avoid repetition of common words.' });
-    if (r < 80) suggestions.push({ type: 'Relevance', icon: '🎯', color: '#F87171', text: 'Ensure all paragraphs directly address the essay topic.' });
-    if (s < 80) suggestions.push({ type: 'Structure', icon: '🏗️', color: '#22D3A5', text: 'Ensure your essay has a clear introduction, body, and conclusion.' });
-    if (baseScore >= 85) suggestions.push({ type: 'Excellence', icon: '⭐', color: '#F59E0B', text: 'Strong essay overall! Your arguments are well-supported.' });
-    if (!suggestions.length) suggestions.push({ type: 'AI Note', icon: '🤖', color: '#4F8EF7', text: 'Good work! Keep refining for even higher scores.' });
-
-    const tags = [];
-    if (g >= 85) tags.push('Grammar');
-    if (v >= 85) tags.push('Vocabulary');
-    if (c >= 85) tags.push('Coherence');
-    if (s >= 85) tags.push('Structure');
-
-    return {
-      score: baseScore,
-      grade: this.scoreToGrade(baseScore),
-      description: `Your essay demonstrates ${baseScore >= 80 ? 'strong' : 'developing'} writing skills. ${words} words analyzed across ${sentences} sentences.`,
-      tags: tags.length ? tags : ['Writing'],
-      breakdown: { grammar: g, coherence: c, vocabulary: v, relevance: r, structure: s },
-      suggestions
-    };
-  }
-
-  scoreToGrade(score) {
-    if (score >= 93) return 'A+';
-    if (score >= 87) return 'A';
-    if (score >= 80) return 'A-';
-    if (score >= 77) return 'B+';
-    if (score >= 73) return 'B';
-    if (score >= 70) return 'B-';
-    if (score >= 65) return 'C+';
-    if (score >= 60) return 'C';
-    return 'D';
-  }
-
   showToast(message, type = 'info') {
+    const colors = {
+      warning: 'rgba(245,158,11,0.3)',
+      error:   'rgba(248,113,113,0.3)',
+      success: 'rgba(34,211,165,0.3)',
+      info:    'rgba(255,255,255,0.1)',
+    };
+    const textColors = {
+      warning: '#F59E0B',
+      error:   '#F87171',
+      success: '#22D3A5',
+      info:    'white',
+    };
     const toast = document.createElement('div');
     toast.style.cssText = `
       position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-      background: rgba(15,15,26,0.95); border: 1px solid rgba(255,255,255,0.1);
-      color: white; padding: 12px 24px; border-radius: 12px;
+      background: rgba(15,15,26,0.95); border: 1px solid ${colors[type] || colors.info};
+      color: ${textColors[type] || 'white'}; padding: 12px 24px; border-radius: 12px;
       font-size: 14px; font-weight: 500; z-index: 3000;
       backdrop-filter: blur(20px);
       box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-      ${type === 'warning' ? 'border-color: rgba(245,158,11,0.3); color: #F59E0B;' : ''}
       animation: fadeIn 0.3s ease;
+      white-space: nowrap;
     `;
     toast.textContent = message;
     document.body.appendChild(toast);
@@ -622,25 +530,45 @@ class Evaluator {
       toast.style.opacity = '0';
       toast.style.transition = 'opacity 0.3s ease';
       setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    }, 3500);
   }
 }
 
 // ─────────────────────────────────────────
 // MODAL SYSTEM
 // ─────────────────────────────────────────
-function openModal(id) {
-  const essay = sampleEssays.find(e => e.id === id);
-  if (!essay) return;
-
+async function openModal(id) {
   const overlay = document.getElementById('modalOverlay');
   const content = document.getElementById('modalContent');
 
-  const tagsHTML = essay.tags.map(tag =>
+  // Show a loading skeleton in the modal while we fetch
+  overlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  content.innerHTML = `
+    <div style="text-align:center; padding:40px; color:var(--text-secondary);">
+      <div class="loading-ring" style="margin:0 auto 16px;"></div>
+      <p>Loading essay details…</p>
+    </div>`;
+
+  try {
+    const essay = await API.getEssay(id);
+    renderModal(essay, content);
+  } catch (err) {
+    content.innerHTML = `
+      <div style="text-align:center; padding:40px; color:#F87171;">
+        <p>⚠️ Could not load essay: ${err.message}</p>
+      </div>`;
+  }
+}
+
+function renderModal(essay, content) {
+  const tags = (essay.tags || []);
+  const tagsHTML = tags.map(tag =>
     `<span class="tag tag-${tag}">${tag.charAt(0).toUpperCase() + tag.slice(1)}</span>`
   ).join('');
 
-  const breakdownHTML = Object.entries(essay.breakdown).map(([key, val]) => `
+  const breakdown = essay.breakdown || {};
+  const breakdownHTML = Object.entries(breakdown).map(([key, val]) => `
     <div class="breakdown-item">
       <span class="breakdown-label">${key.charAt(0).toUpperCase() + key.slice(1)}</span>
       <div class="breakdown-track">
@@ -650,9 +578,10 @@ function openModal(id) {
     </div>
   `).join('');
 
-  const suggestionsHTML = essay.suggestions.map(sug => `
+  const suggestions = essay.suggestions || [];
+  const suggestionsHTML = suggestions.map(sug => `
     <div class="suggestion-item">
-      <div class="suggestion-icon" style="background:${sug.color}18; color:${sug.color}">${sug.icon}</div>
+      <div class="suggestion-icon" style="background:${sug.color}18; color:${sug.color}">${sug.icon || '💡'}</div>
       <div class="sug-info">
         <div class="sug-type">${sug.type}</div>
         <div class="sug-text">${sug.text}</div>
@@ -660,9 +589,12 @@ function openModal(id) {
     </div>
   `).join('');
 
+  const icon = essay.icon || '📝';
+  const mode = essay.mode || 'standard';
+
   content.innerHTML = `
-    <h2>${essay.icon} ${essay.title}</h2>
-    <div class="modal-meta">📅 ${essay.date} · ${essay.mode.charAt(0).toUpperCase() + essay.mode.slice(1)} · ${essay.topic}</div>
+    <h2>${icon} ${essay.title}</h2>
+    <div class="modal-meta">📅 ${essay.date} · ${mode.charAt(0).toUpperCase() + mode.slice(1)} · ${essay.topic || 'General'}</div>
 
     <div class="modal-score-row">
       <div class="modal-score-big">${essay.score}</div>
@@ -673,17 +605,21 @@ function openModal(id) {
       <div class="card-tags">${tagsHTML}</div>
     </div>
 
-    <p style="font-size:14px; color: var(--text-secondary); line-height:1.7; margin-bottom:20px">${essay.summary}</p>
+    <p style="font-size:14px; color: var(--text-secondary); line-height:1.7; margin-bottom:20px">${essay.summary || essay.description || ''}</p>
+
+    ${essay.content ? `
+      <h3 class="card-title" style="margin-bottom:8px">Essay Content</h3>
+      <div style="font-size:13px; color:var(--text-secondary); line-height:1.8; max-height:180px; overflow-y:auto;
+                  background:rgba(255,255,255,0.03); border-radius:10px; padding:14px; margin-bottom:20px;
+                  border:1px solid rgba(255,255,255,0.06); white-space:pre-wrap;">${essay.content}</div>
+    ` : ''}
 
     <h3 class="card-title" style="margin-bottom:12px">Score Breakdown</h3>
     <div class="breakdown-bars" style="margin-bottom:20px">${breakdownHTML}</div>
 
     <h3 class="card-title" style="margin-bottom:12px">AI Suggestions</h3>
-    <div class="suggestions-list">${suggestionsHTML}</div>
+    <div class="suggestions-list">${suggestionsHTML || '<p style="color:var(--text-secondary); font-size:13px;">No suggestions available.</p>'}</div>
   `;
-
-  overlay.classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
 }
 
 function closeModal() {
@@ -695,44 +631,122 @@ function closeModal() {
 // INSIGHTS / CHARTS
 // ─────────────────────────────────────────
 let chartsInitialized = false;
+let insightsChartInstances = {};
 
-function initInsights() {
-  if (chartsInitialized) return;
+async function initInsights() {
+  // Always reload insights fresh so stats stay current
+  chartsInitialized = false;
+  Object.values(insightsChartInstances).forEach(c => { try { c.destroy(); } catch {} });
+  insightsChartInstances = {};
 
-  // Animate category bars
-  document.querySelectorAll('.cat-fill').forEach(fill => {
-    const width = fill.style.width;
-    fill.style.width = '0%';
-    setTimeout(() => { fill.style.width = width; }, 100);
-  });
+  const essays = await getEssaysCached();
 
-  // Load Chart.js dynamically
+  // ── Compute stat values ────────────────────────────────────────────────
+  const total = essays.length;
+
+  const avgScore = total
+    ? Math.round(essays.reduce((s, e) => s + (e.score || 0), 0) / total * 10) / 10
+    : 0;
+
+  const bestEssay = total
+    ? essays.reduce((best, e) => e.score > best.score ? e : best, essays[0])
+    : null;
+
+  // Calculate improvement trend (compare first half avg to second half avg)
+  let improvementText = 'N/A';
+  if (total >= 2) {
+    const half = Math.floor(total / 2);
+    const older = essays.slice(half);  // older (API sorted newest-first)
+    const newer = essays.slice(0, half);
+    const olderAvg = older.reduce((s, e) => s + e.score, 0) / older.length;
+    const newerAvg = newer.reduce((s, e) => s + e.score, 0) / newer.length;
+    const diff = Math.round((newerAvg - olderAvg) * 10) / 10;
+    improvementText = diff >= 0 ? `+${diff}%` : `${diff}%`;
+  }
+
+  // ── Update stat cards ──────────────────────────────────────────────────
+  const avgEl = document.getElementById('avgScore');
+  if (avgEl) avgEl.textContent = avgScore;
+
+  const totalEl = document.querySelector('.stat-card:nth-child(2) .stat-value');
+  if (totalEl) totalEl.textContent = total;
+
+  const improveEl = document.querySelector('.stat-card:nth-child(3) .stat-value');
+  if (improveEl) improveEl.textContent = improvementText;
+
+  const bestEl = document.querySelector('.stat-card:nth-child(4) .stat-value');
+  if (bestEl) bestEl.textContent = bestEssay ? bestEssay.score : '--';
+
+  const bestTrend = document.querySelector('.stat-card:nth-child(4) .stat-trend');
+  if (bestTrend && bestEssay) {
+    bestTrend.textContent = bestEssay.title?.slice(0, 25) + (bestEssay.title?.length > 25 ? '…' : '');
+  }
+
+  // ── Category bars ──────────────────────────────────────────────────────
+  if (total > 0) {
+    const avgBreakdown = (key) => {
+      const sum = essays.reduce((acc, e) => acc + ((e.breakdown || {})[key] || 0), 0);
+      return Math.round(sum / total);
+    };
+
+    const categories = {
+      Grammar:    avgBreakdown('grammar'),
+      Coherence:  avgBreakdown('coherence'),
+      Vocabulary: avgBreakdown('vocabulary'),
+      Relevance:  avgBreakdown('relevance'),
+      Structure:  avgBreakdown('structure'),
+    };
+
+    const catBars = document.getElementById('categoryBars');
+    if (catBars) {
+      catBars.innerHTML = Object.entries(categories).map(([label, val]) => `
+        <div class="category-bar-item">
+          <span class="cat-label">${label}</span>
+          <div class="cat-track">
+            <div class="cat-fill" style="width:0%" data-val="${val}"></div>
+          </div>
+          <span class="cat-val">${val}</span>
+        </div>
+      `).join('');
+
+      // Animate bars
+      requestAnimationFrame(() => {
+        catBars.querySelectorAll('.cat-fill').forEach(fill => {
+          const val = fill.dataset.val;
+          setTimeout(() => { fill.style.width = `${val}%`; }, 100);
+        });
+      });
+    }
+  }
+
+  // Load Chart.js dynamically then render
   if (typeof Chart === 'undefined') {
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
-    script.onload = () => renderCharts();
+    script.onload = () => renderCharts(essays);
     document.head.appendChild(script);
   } else {
-    renderCharts();
+    renderCharts(essays);
   }
 
   chartsInitialized = true;
 }
 
-function renderCharts() {
-  const chartDefaults = {
-    color: 'rgba(240, 240, 255, 0.6)',
-    borderColor: 'rgba(255, 255, 255, 0.08)'
-  };
-  Chart.defaults.color = chartDefaults.color;
+function renderCharts(essays) {
+  Chart.defaults.color = 'rgba(240, 240, 255, 0.6)';
 
-  // Trend Chart
+  // ── Trend Chart ────────────────────────────────────────────────────────
   const trendCtx = document.getElementById('trendChart');
-  if (trendCtx && !trendCtx._chartInstance) {
-    const scores = sampleEssays.map(e => e.score);
-    const labels = sampleEssays.map(e => e.title.split(' ').slice(0, 2).join(' '));
+  if (trendCtx) {
+    if (insightsChartInstances.trend) {
+      insightsChartInstances.trend.destroy();
+    }
+    // Show last 10 essays in chronological order
+    const trendEssays = [...essays].reverse().slice(-10);
+    const scores = trendEssays.map(e => e.score);
+    const labels = trendEssays.map(e => (e.title || '').split(' ').slice(0, 2).join(' '));
 
-    trendCtx._chartInstance = new Chart(trendCtx, {
+    insightsChartInstances.trend = new Chart(trendCtx, {
       type: 'line',
       data: {
         labels,
@@ -748,8 +762,8 @@ function renderCharts() {
           pointRadius: 5,
           pointHoverRadius: 7,
           fill: true,
-          tension: 0.4
-        }]
+          tension: 0.4,
+        }],
       },
       options: {
         responsive: true,
@@ -763,32 +777,36 @@ function renderCharts() {
             padding: 12,
             titleFont: { family: 'Inter', size: 12 },
             bodyFont: { family: 'Inter', size: 13, weight: '700' },
-          }
+          },
         },
         scales: {
           x: {
             grid: { color: 'rgba(255,255,255,0.04)' },
-            ticks: { maxRotation: 30, font: { size: 11 } }
+            ticks: { maxRotation: 30, font: { size: 11 } },
           },
           y: {
-            min: 50, max: 100,
+            min: 0, max: 100,
             grid: { color: 'rgba(255,255,255,0.04)' },
-            ticks: { font: { size: 11 } }
-          }
-        }
-      }
+            ticks: { font: { size: 11 } },
+          },
+        },
+      },
     });
+    trendCtx._chartInstance = insightsChartInstances.trend;
   }
 
-  // Radar Chart
+  // ── Radar Chart ────────────────────────────────────────────────────────
   const radarCtx = document.getElementById('radarChart');
-  if (radarCtx && !radarCtx._chartInstance) {
+  if (radarCtx && essays.length > 0) {
+    if (insightsChartInstances.radar) {
+      insightsChartInstances.radar.destroy();
+    }
     const avg = (key) => {
-      const sum = sampleEssays.reduce((acc, e) => acc + (e.breakdown[key] || 0), 0);
-      return Math.round(sum / sampleEssays.length);
+      const sum = essays.reduce((acc, e) => acc + ((e.breakdown || {})[key] || 0), 0);
+      return Math.round(sum / essays.length);
     };
 
-    radarCtx._chartInstance = new Chart(radarCtx, {
+    insightsChartInstances.radar = new Chart(radarCtx, {
       type: 'radar',
       data: {
         labels: ['Grammar', 'Coherence', 'Vocabulary', 'Relevance', 'Structure'],
@@ -802,14 +820,12 @@ function renderCharts() {
           pointBorderColor: 'rgba(10,10,15,0.8)',
           pointBorderWidth: 2,
           pointRadius: 4,
-        }]
+        }],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-        },
+        plugins: { legend: { display: false } },
         scales: {
           r: {
             min: 0, max: 100,
@@ -817,16 +833,14 @@ function renderCharts() {
             angleLines: { color: 'rgba(255,255,255,0.06)' },
             pointLabels: {
               color: 'rgba(240,240,255,0.6)',
-              font: { size: 12, family: 'Inter', weight: '600' }
+              font: { size: 12, family: 'Inter', weight: '600' },
             },
-            ticks: {
-              display: false,
-              stepSize: 20
-            }
-          }
-        }
-      }
+            ticks: { display: false, stepSize: 20 },
+          },
+        },
+      },
     });
+    radarCtx._chartInstance = insightsChartInstances.radar;
   }
 }
 
@@ -884,32 +898,27 @@ function initScrollAnimations() {
 // INIT
 // ─────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // Navigation
   const nav = new Navigation();
 
-  // Init home page content
-  initHome();
+  // Pre-fetch essays so pages feel instant
+  getEssaysCached().then(() => {
+    initHome();
+    initHistory();
+  });
 
-  // Init history content
-  initHistory();
-
-  // Evaluator
   const evaluator = new Evaluator();
 
-  // Notifications
   initNotifications();
 
-  // Modal close
+  // Modal close handlers
   document.getElementById('modalClose')?.addEventListener('click', closeModal);
   document.getElementById('modalOverlay')?.addEventListener('click', (e) => {
     if (e.target === e.currentTarget) closeModal();
   });
 
-  // Escape key closes modal
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeModal();
   });
 
-  // Scroll animations
   setTimeout(initScrollAnimations, 200);
 });
